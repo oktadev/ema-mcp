@@ -5,7 +5,13 @@ const PORT = process.env.PORT ?? 8080;
 // Authorization Server that issues the access tokens (xaa.dev's playground AS by default).
 const AUTH_URL = process.env.AUTH_URL ?? 'https://auth.resource.xaa.dev';
 // Public URL of this server. It must match what you register in xaa.dev, because it becomes the token's `aud`.
-const RESOURCE_URL = process.env.RESOURCE_URL ?? `http://localhost:${PORT}`;
+// In a Codespace it defaults to the forwarded port URL plus /mcp, matching the demo's xaa.dev registration.
+const { CODESPACE_NAME, GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: FORWARDING_DOMAIN } = process.env;
+const RESOURCE_URL =
+  process.env.RESOURCE_URL ??
+  (CODESPACE_NAME && FORWARDING_DOMAIN
+    ? `https://${CODESPACE_NAME}-${PORT}.${FORWARDING_DOMAIN}/mcp`
+    : `http://localhost:${PORT}`);
 
 const authServerMetadata = await fetchAuthServerMetadata(AUTH_URL);
 

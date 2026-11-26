@@ -144,7 +144,8 @@ export function createApp({ resourceUrl, authServerMetadata, verifier, allowedHo
   app.use(cors);
 
   // The registration wizard's health check. Unauthenticated on purpose.
-  app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+  // Also served under /mcp because the wizard may resolve the health path against the MCP URL.
+  app.get(['/health', '/mcp/health'], (_req, res) => res.json({ status: 'ok' }));
 
   // STEP 2 (TODO): publish /.well-known/oauth-protected-resource so agents can discover the Authorization Server.
   //   Hint: app.use(mcpAuthMetadataRouter({ oauthMetadata: authServerMetadata, resourceServerUrl,
