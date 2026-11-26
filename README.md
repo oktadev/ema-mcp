@@ -17,13 +17,22 @@ mcp-lab/
 
 ```sh
 npm install                # installs both workspaces
-npm run dev                # starts the server, runs the client against it, stops the server
+npm run dev                # starts the server and an interactive client; type quit to stop both
 PORT=9090 npm run dev      # same, on another port (default 8080)
+```
+
+In the client prompt:
+
+```
+mcp> tools
+mcp> call line_status {"line":"Jubilee"}
+mcp> call oyster_balance
+mcp> quit
 ```
 
 Or run them separately, in two terminals:
 
 ```sh
 npm run server             # http://localhost:8080/mcp  (PORT=9090 npm run server for another port)
-npm run client             # lists tools and calls one  (MCP_URL=http://localhost:9090/mcp npm run client)
+npm run client             # MCP_URL=http://localhost:9090/mcp npm run client
 ```
