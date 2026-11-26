@@ -5,6 +5,7 @@ import { NodeStreamableHTTPServerTransport } from '@modelcontextprotocol/node';
 import { LINES, STATIONS, SLANG, planJourney, fareFor, lineStatus, translateSlang } from './london.js';
 // SCOPES.READ = 'tube.read', SCOPES.OYSTER = 'oyster.use'
 import { SCOPES } from './auth.js';
+import { requestLogger } from './logger.js';
 
 // STEP 5 (TODO): this is one Oyster card for the whole world. Replace it with one card per traveller.
 const oyster = { balancePence: 1500, history: [] };
@@ -141,6 +142,7 @@ export function createApp({ resourceUrl, authServerMetadata, verifier, allowedHo
   const resourceServerUrl = new URL(resourceUrl);
 
   const app = createMcpExpressApp({ host: '0.0.0.0', allowedHosts });
+  app.use(requestLogger);
   app.use(cors);
 
   // The registration wizard's health check. Unauthenticated on purpose.

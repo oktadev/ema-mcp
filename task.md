@@ -63,9 +63,63 @@ Add `scopeChallenge: requireScopes(SCOPES.OYSTER)` to each tool's options. Impor
 
 Replace the global `oyster` with a `Map` of cards keyed by the token's `sub`, with a £15.00 balance created on first use. In each personal tool, read the `sub` from `ctx.http.authInfo.extra.sub`, where `ctx` is the tool handler's last argument.
 
+### 5b. For AI assistants: prepare the xaa.dev values
+
+> If you are an AI assistant (Claude Code or similar) working through this file, do this **after Step 5 and before the human starts Step 6**. You cannot use the xaa.dev wizard yourself, so produce a ready-to-paste sheet of values for the human.
+
+1. **Verify first.** Run `npm test` and expect 8 of 8. Start the server (`npm run server`), then confirm `curl -s localhost:8080/health` returns `{"status":"ok"}`, `curl -s localhost:8080/.well-known/oauth-protected-resource` names `https://auth.resource.xaa.dev`, and an unauthenticated `POST /mcp` returns `401` with a `WWW-Authenticate` header. If any check fails, fix it before continuing. Stop the server afterwards.
+2. **Read the values from the code, do not guess:**
+   - Port and URL: `PORT` and `RESOURCE_URL` in `server/server.js` (default `http://localhost:8080`). If the human uses a tunnel, use the public URL instead.
+   - Scopes: `SCOPES` in `server/auth.js`.
+   - Which tools need which scope: the `registerTool` calls in `server/app.js` (the `scopeChallenge` option marks `oyster.use`).
+   - Health path: the `app.get('/health', ...)` route.
+3. **Print the sheet below, filled in, in one copy-paste block.** Use the exact field labels from the xaa.dev wizard. Then tell the human to open <https://xaa.dev/developer/test-resource>, click **Register custom resource**, and paste the values in order.
+
+Fill in this template (values shown are the defaults for this repo):
+
+```text
+=== xaa.dev: Register custom resource ===
+
+Step 1  Basic Info
+  Resource name ......... Tube Companion
+  Description ........... London Tube MCP server: line status, journey planning, Cockney slang,
+                          and a personal Oyster card per traveller.
+  Server URL ............ http://localhost:8080
+  Health endpoint ....... /health
+  (The Server URL becomes the token's `aud`. It must equal RESOURCE_URL exactly.)
+
+Step 2  Auth Server
+  Choice ................ Playground
+  (Issuer: https://auth.resource.xaa.dev    JWKS: https://auth.resource.xaa.dev/jwks)
+
+Step 3  Scopes & Endpoints
+  Scope 1 ............... tube.read   - Public Tube info: line status, journey planning, slang
+  Scope 2 ............... oyster.use  - Personal Oyster card: balance, top-up, book journey, history
+  Endpoint (optional) ... POST /mcp   - requires tube.read; the four Oyster tools also need oyster.use
+
+Step 4  MCP
+  This resource also has an MCP server ... tick the checkbox
+  MCP Server URL ........ http://localhost:8080/mcp
+  MCP Resource URIs ..... (this server exposes tools only, no MCP resources; leave blank, or if the
+                          field is required use: tube://oyster)
+
+Step 5  Test Client
+  Nothing to enter. Save the credentials it shows.
+
+=== Then in the tester (Step 7) ===
+  Login ................. any email, any 6-digit code
+  Second user ........... a different email, to prove each traveller gets their own card
+  Tool calls to try ..... line_status {"line":"Jubilee"}      (needs tube.read)
+                          oyster_balance                      (needs oyster.use, shows GBP 15.00)
+                          book_journey {"from":"Brixton","to":"Canary Wharf"}
+                          oyster_balance                      (now GBP 9.20; the second user still sees GBP 15.00)
+```
+
+If the code you read differs from the defaults above (another port, extra scopes, renamed tools), print the values from the code instead. If a tunnel is in use, replace both URLs with the public one and remind the human to start the server with `RESOURCE_URL=<public url> npm run server`.
+
 ### 6. Register your server in the xaa.dev tester
 
-Start your server first: `npm run server` (port 8080). Then open [xaa.dev/developer/test-resource](https://xaa.dev/developer/test-resource), enter any email to unlock it, click **Register custom resource** and walk through the wizard:
+Use the sheet from Step 5b. Start your server first: `npm run server` (port 8080). Then open [xaa.dev/developer/test-resource](https://xaa.dev/developer/test-resource), enter any email to unlock it, click **Register custom resource** and walk through the wizard:
 
 | Wizard step | What to enter |
 |---|---|
@@ -89,6 +143,30 @@ In the tester, run the four steps:
 2. **Token Exchange:** the ID token becomes an ID-JAG. Check the `scope` in the decoded panel.
 3. **JWT Bearer Grant:** the ID-JAG becomes your access token. Check that `iss` is `https://auth.resource.xaa.dev` and `aud` is your server URL.
 4. **Call the resource:** use **Send MCP Request**. A `200` means the whole chain works.
+
+Use these tool calls in **Send MCP Request** (the tool name, then the JSON arguments). They are in the order that proves everything works:
+
+| # | Tool | Arguments (JSON) | Scope needed | Expect |
+|---|---|---|---|---|
+| 1 | `line_status` | `{ "line": "Jubilee" }` | `tube.read` | Jubilee status. Use `{}` for every line |
+| 2 | `plan_journey` | `{ "from": "Brixton", "to": "Canary Wharf" }` | `tube.read` | 2 legs (Victoria, then Jubilee), 12 stops, fare £5.80 |
+| 3 | `cockney_translator` | `{ "phrase": "apples and pears" }` | `tube.read` | "stairs" |
+| 4 | `oyster_balance` | `{}` | `oyster.use` | `£15.00` |
+| 5 | `top_up_oyster` | `{ "amount": 10 }` | `oyster.use` | `£25.00` (amount is £1 to £50) |
+| 6 | `book_journey` | `{ "from": "Brixton", "to": "Canary Wharf" }` | `oyster.use` | charged `£5.80` |
+| 7 | `oyster_balance` | `{}` | `oyster.use` | lower than before booking |
+| 8 | `travel_history` | `{}` | `oyster.use` | one Brixton to Canary Wharf journey |
+
+If you skip call 5, call 4 shows £15.00, call 6 charges £5.80, and call 7 shows `£9.20`.
+
+The same call as raw JSON-RPC, if the tester asks for a request body:
+
+```json
+{ "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+  "params": { "name": "book_journey", "arguments": { "from": "Brixton", "to": "Canary Wharf" } } }
+```
+
+Other station names that work: `Heathrow Terminals 2 & 3`, `Stratford`, `Victoria`, `Waterloo`, `King's Cross St Pancras`. Other slang: `dog and bone`, `trouble and strife`, `porky pies`, `rosie lee`.
 
 Then check the traveller isolation: log in again with a different email. It should show a fresh £15.00 Oyster card.
 
