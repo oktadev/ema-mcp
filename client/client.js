@@ -2,9 +2,13 @@ import readline from 'node:readline/promises';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 
 const SERVER_URL = process.env.MCP_URL ?? 'http://localhost:8080/mcp';
+// Once your server requires a token, pass one in: MCP_TOKEN=<access token> npm run client
+const TOKEN = process.env.MCP_TOKEN;
 
 const client = new Client({ name: 'tube-companion-client', version: '1.0.0' });
-await client.connect(new StreamableHTTPClientTransport(new URL(SERVER_URL)));
+await client.connect(new StreamableHTTPClientTransport(new URL(SERVER_URL), {
+    requestInit: TOKEN ? { headers: { authorization: `Bearer ${TOKEN}` } } : undefined,
+  }));
 
 const { tools } = await client.listTools();
 console.log(`Connected to ${SERVER_URL}\n`);

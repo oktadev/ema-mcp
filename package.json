@@ -9,7 +9,8 @@
   "scripts": {
     "server": "npm start -w server",
     "client": "npm start -w client",
-    "dev": "node scripts/dev.js"
+    "dev": "node scripts/dev.js",
+    "test": "npm test -w server"
   },
   "engines": {
     "node": ">=22.12"

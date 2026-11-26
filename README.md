@@ -2,6 +2,8 @@
 
 A hands-on lab: a London Tube MCP server and a minimal client. The server starts with no authentication.
 
+**Your task:** make the server XAA-ready. Follow [task.md](task.md).
+
 ```
 mcp-lab/
 ├── server/   MCP server (Express, Streamable HTTP)
@@ -12,6 +14,12 @@ mcp-lab/
 
 - **Node.js 22.12 or newer** (22 LTS). Check with `node -v`.
   `npm install` fails with a clear error on older versions.
+
+## Check your work
+
+```sh
+npm test                   # 8 tests; all pass when the task is done
+```
 
 ## Run
 
@@ -34,5 +42,5 @@ Or run them separately, in two terminals:
 
 ```sh
 npm run server             # http://localhost:8080/mcp  (PORT=9090 npm run server for another port)
-npm run client             # MCP_URL=http://localhost:9090/mcp npm run client
+npm run client             # MCP_URL=http://localhost:9090/mcp MCP_TOKEN=<token> npm run client
 ```
