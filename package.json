@@ -1,0 +1,17 @@
+{
+  "name": "mcp-lab",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "server": "npm start -w server",
+    "client": "npm start -w client",
+    "dev": "node scripts/dev.js"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
