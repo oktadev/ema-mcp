@@ -11,6 +11,7 @@ mcp-lab/
 ## Prerequisites
 
 - **Node.js 22.12 or newer** (22 LTS). Check with `node -v`.
+- **A public URL**: use either [GitHub Codespaces](https://github.com/features/codespaces) (port 8080 set to Public) or a [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) tunnel.
 
 ## Run
 
