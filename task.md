@@ -25,29 +25,43 @@ Start with `npm test`. You should see **2 passing, 6 failing**. Your job is to g
 
 ## Steps
 
-### 1. Verify tokens, in `server/auth.js`
+Each step links to the exact line to edit. Line numbers drift as you type, so each link also names a marker you can search for.
 
-Implement `verifyAccessToken(token)` inside `createTokenVerifier`. The comment above it spells out the contract. In short:
+### 1. Verify tokens
+
+**Edit:** [`server/auth.js` line 48](server/auth.js#L48), the body of `verifyAccessToken` (search for `STEP 1`). The comment right above it spells out the contract.
 
 - `jwtVerify(token, jwks, { issuer, algorithms: ['RS256'] })` checks the signature, `iss` and `exp`.
-- On failure, throw `OAuthError(OAuthErrorCode.InvalidToken, ...)`.
+- On failure, throw `OAuthError(OAuthErrorCode.InvalidToken, ...)`. Both names are already imported.
 - On success, return the token's `scopes`, `resource` (from `aud`) and `extra: { sub }`.
 
-### 2. Publish discovery metadata, in `server/app.js`
+### 2. Publish discovery metadata
 
-Mount `mcpAuthMetadataRouter` so the server serves `/.well-known/oauth-protected-resource`. This is how an agent learns which Authorization Server to use. The hint is in the `STEP 2` comment.
+**Edit:** [`server/app.js` line 149](server/app.js#L149) (search for `STEP 2`). The `app` and `authServerMetadata` values are already in scope, and the comment has the call to paste.
 
-### 3. Require a token on `/mcp`, in `server/app.js`
+Add to the imports at the top of the file: `mcpAuthMetadataRouter` from `@modelcontextprotocol/express` ([line 3](server/app.js#L3)).
 
-Create `authenticate` with `requireBearerAuth` and put it in front of `POST /mcp`. The hint is in the `STEP 3` comment. The token's `aud` must match this server's URL, and `tube.read` scope is required.
+This serves `/.well-known/oauth-protected-resource`, which is how an agent learns which Authorization Server to use.
 
-### 4. Protect the personal tools, in `server/app.js`
+### 3. Require a token on `/mcp`
 
-Add `scopeChallenge: requireScopes(SCOPES.OYSTER)` to the options of `oyster_balance`, `top_up_oyster`, `book_journey` and `travel_history`. Leave the three public tools alone.
+**Edit:** [`server/app.js` line 154](server/app.js#L154) (search for `STEP 3`) to create `authenticate`, then add it to the route at [line 161](server/app.js#L161): `app.post('/mcp', authenticate, ...)`.
 
-### 5. One Oyster card per traveller, in `server/app.js`
+Add to the imports: `requireBearerAuth` from `@modelcontextprotocol/express` ([line 3](server/app.js#L3)), and `getOAuthProtectedResourceMetadataUrl` from `@modelcontextprotocol/server` ([line 2](server/app.js#L2)).
 
-Replace the global `oyster` with a `Map` of cards keyed by the token's `sub`. In each personal tool, read it from `ctx.http.authInfo.extra.sub` (the tool handler's last argument). Create each card with a £15.00 balance on first use.
+The token's `aud` must match this server's URL, and the `tube.read` scope is required.
+
+### 4. Protect the personal tools
+
+**Edit:** the four tools from [`server/app.js` line 91](server/app.js#L91) to [line 128](server/app.js#L128): `oyster_balance`, `top_up_oyster`, `book_journey` and `travel_history` (search for `STEP 4`).
+
+Add `scopeChallenge: requireScopes(SCOPES.OYSTER)` to each tool's options. Import `requireScopes` from `@modelcontextprotocol/server` ([line 2](server/app.js#L2)). Leave the three public tools alone.
+
+### 5. One Oyster card per traveller
+
+**Edit:** the global card at [`server/app.js` line 10](server/app.js#L10) (search for `STEP 5`), and the same four tools as Step 4.
+
+Replace the global `oyster` with a `Map` of cards keyed by the token's `sub`, with a £15.00 balance created on first use. In each personal tool, read the `sub` from `ctx.http.authInfo.extra.sub`, where `ctx` is the tool handler's last argument.
 
 ### 6. Register your server in the xaa.dev tester
 
