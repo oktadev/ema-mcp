@@ -73,47 +73,24 @@ Replace the global `oyster` with a `Map` of cards keyed by the token's `sub`, wi
    - Scopes: `SCOPES` in `server/auth.js`.
    - Which tools need which scope: the `registerTool` calls in `server/app.js` (the `scopeChallenge` option marks `oyster.use`).
    - Health path: the `app.get('/health', ...)` route.
-3. **Print the sheet below, filled in, in one copy-paste block.** Use the exact field labels from the xaa.dev wizard. Then tell the human to open <https://xaa.dev/developer/test-resource>, click **Register custom resource**, and paste the values in order.
+3. **Print the table below, filled in, as one copy-paste block.** Use the exact field labels from the xaa.dev wizard. Then tell the human to open <https://xaa.dev/developer/test-resource>, click **Register custom resource**, and paste the values in order.
 
 Fill in this template (values shown are the defaults for this repo):
 
-```text
-=== xaa.dev: Register custom resource ===
-
-Step 1  Basic Info
-  Resource name ......... Tube Companion
-  Description ........... London Tube MCP server: line status, journey planning, Cockney slang,
-                          and a personal Oyster card per traveller.
-  Server URL ............ http://localhost:8080
-  Health endpoint ....... /health
-  (The Server URL becomes the token's `aud`. It must equal RESOURCE_URL exactly.)
-
-Step 2  Auth Server
-  Choice ................ Playground
-  (Issuer: https://auth.resource.xaa.dev    JWKS: https://auth.resource.xaa.dev/jwks)
-
-Step 3  Scopes & Endpoints
-  Scope 1 ............... tube.read   - Public Tube info: line status, journey planning, slang
-  Scope 2 ............... oyster.use  - Personal Oyster card: balance, top-up, book journey, history
-  Endpoint (optional) ... POST /mcp   - requires tube.read; the four Oyster tools also need oyster.use
-
-Step 4  MCP
-  This resource also has an MCP server ... tick the checkbox
-  MCP Server URL ........ http://localhost:8080/mcp
-  MCP Resource URIs ..... (this server exposes tools only, no MCP resources; leave blank, or if the
-                          field is required use: tube://oyster)
-
-Step 5  Test Client
-  Nothing to enter. Save the credentials it shows.
-
-=== Then in the tester (Step 7) ===
-  Login ................. any email, any 6-digit code
-  Second user ........... a different email, to prove each traveller gets their own card
-  Tool calls to try ..... line_status {"line":"Jubilee"}      (needs tube.read)
-                          oyster_balance                      (needs oyster.use, shows GBP 15.00)
-                          book_journey {"from":"Brixton","to":"Canary Wharf"}
-                          oyster_balance                      (now GBP 9.20; the second user still sees GBP 15.00)
-```
+| Wizard step | Field | Value |
+|---|---|---|
+| 1. Basic Info | Resource name | `Tube Companion` |
+| 1. Basic Info | Description | `London Tube MCP server: line status, journey planning, Cockney slang, and a personal Oyster card per traveller.` |
+| 1. Basic Info | Server URL | `http://localhost:8080` (must equal `RESOURCE_URL`; it becomes the token's `aud`) |
+| 1. Basic Info | Health endpoint | `/health` |
+| 2. Auth Server | Choice | `Playground` |
+| 3. Scopes | Scope 1 | `tube.read` |
+| 3. Scopes | Scope 2 | `oyster.use` |
+| 3. Endpoints (optional) | Endpoint | `POST /mcp` |
+| 4. MCP | This resource also has an MCP server | tick |
+| 4. MCP | MCP Server URL | `http://localhost:8080/mcp` |
+| 4. MCP | MCP Resource URIs | leave blank (or `tube://oyster` if required) |
+| 5. Test Client | | Nothing to enter. Save the credentials. |
 
 If the code you read differs from the defaults above (another port, extra scopes, renamed tools), print the values from the code instead. If a tunnel is in use, replace both URLs with the public one and remind the human to start the server with `RESOURCE_URL=<public url> npm run server`.
 
