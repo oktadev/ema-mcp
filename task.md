@@ -35,6 +35,8 @@ Each step links to the exact line to edit. Line numbers drift as you type, so ea
 - On failure, throw `OAuthError(OAuthErrorCode.InvalidToken, ...)`. Both names are already imported.
 - On success, return the token's `scopes`, `resource` (from `aud`) and `extra: { sub }`.
 
+**Checkpoint:** run `npm test`. You should now see more tests passing than the starting 2.
+
 ### 2. Publish discovery metadata
 
 **Edit:** [`server/app.js` line 149](server/app.js#L149) (search for `STEP 2`). The `app` and `authServerMetadata` values are already in scope, and the comment has the call to paste.
@@ -42,6 +44,8 @@ Each step links to the exact line to edit. Line numbers drift as you type, so ea
 Add to the imports at the top of the file: `mcpAuthMetadataRouter` from `@modelcontextprotocol/express` ([line 3](server/app.js#L3)).
 
 This serves `/.well-known/oauth-protected-resource`, which is how an agent learns which Authorization Server to use.
+
+**Checkpoint:** with the server running (`npm run server`), `curl -s localhost:8080/.well-known/oauth-protected-resource` should name `https://auth.resource.xaa.dev`.
 
 ### 3. Require a token on `/mcp`
 
@@ -51,11 +55,15 @@ Add to the imports: `requireBearerAuth` from `@modelcontextprotocol/express` ([l
 
 The token's `aud` must match this server's URL, and the `tube.read` scope is required.
 
+**Checkpoint:** `curl -i -X POST localhost:8080/mcp` (restart the server first) should return `401` with a `WWW-Authenticate` header. Before this step it did not.
+
 ### 4. Protect the personal tools
 
 **Edit:** the four tools from [`server/app.js` line 91](server/app.js#L91) to [line 128](server/app.js#L128): `oyster_balance`, `top_up_oyster`, `book_journey` and `travel_history` (search for `STEP 4`).
 
 Add `scopeChallenge: requireScopes(SCOPES.OYSTER)` to each tool's options. Import `requireScopes` from `@modelcontextprotocol/server` ([line 2](server/app.js#L2)). Leave the three public tools alone.
+
+**Checkpoint:** `npm test` passes more tests than after Step 3. The scope tests for the Oyster tools are the ones that move.
 
 ### 5. One Oyster card per traveller
 
@@ -63,27 +71,46 @@ Add `scopeChallenge: requireScopes(SCOPES.OYSTER)` to each tool's options. Impor
 
 Replace the global `oyster` with a `Map` of cards keyed by the token's `sub`, with a £15.00 balance created on first use. In each personal tool, read the `sub` from `ctx.http.authInfo.extra.sub`, where `ctx` is the tool handler's last argument.
 
+**Checkpoint:** `npm test` shows **8 passing, 0 failing**. Do not start Step 6 until it does.
+
 ### 5b. For AI assistants: prepare the xaa.dev values
 
 > If you are an AI assistant (Claude Code or similar) working through this file, do this **after Step 5 and before the human starts Step 6**. You cannot use the xaa.dev wizard yourself, so produce a ready-to-paste table of values for the human.
 
 1. **Verify first.** Run `npm test` and expect 8 of 8. Start the server (`npm run server`), then confirm `curl -s localhost:8080/health` returns `{"status":"ok"}`, `curl -s localhost:8080/.well-known/oauth-protected-resource` names `https://auth.resource.xaa.dev`, and an unauthenticated `POST /mcp` returns `401` with a `WWW-Authenticate` header. If any check fails, fix it before continuing. Stop the server afterwards.
 2. **Read the values from the code, do not guess:** `PORT` and `RESOURCE_URL` in `server/server.js`, `SCOPES` in `server/auth.js`, the `registerTool` calls in `server/app.js` (`scopeChallenge` marks `oyster.use`) and the `/health` route.
-3. **Print the Step 6 table, filled in with those values, as one copy-paste block.** If anything differs from the defaults (another port, extra scopes, renamed tools, a tunnel), use what the code says. Then tell the human to start the server as shown in Step 6 and open <https://xaa.dev/developer/test-resource>.
+3. **Print the Step 6 table, filled in with those values, as one copy-paste block.** If anything differs from the defaults (another port, extra scopes, renamed tools, a tunnel), use what the code says. Then tell the human to do Step 5c (make the port Public and start the server with `RESOURCE_URL=<public url>/mcp`) and open <https://xaa.dev/developer/test-resource>. Use the human's real public URL in the table if they have given it; otherwise leave `<public url>` as a placeholder and say so.
+
+### 5c. Get your public URL (do this before Step 6)
+
+xaa.dev runs in your browser and its token must name your server's URL, so use a public URL, not `localhost`. Pick one and call it `<public url>` from here on:
+
+- **GitHub Codespaces:** open the **Ports** tab, find port `8080`, right-click it, choose **Port Visibility → Public**, then copy its address. It looks like `https://<codespace-name>-8080.app.github.dev`. Without Public visibility the xaa.dev tester gets a login redirect instead of your server.
+- **Local machine:** run a tunnel such as `cloudflared tunnel --url http://localhost:8080` and copy the `https://...` address it prints.
+
+Your **MCP URL** is `<public url>/mcp` (note the `/mcp`). Start the server with it:
+
+```
+RESOURCE_URL=<public url>/mcp npm run server
+```
+
+**Checkpoint:** open `<public url>/mcp/health` in your browser. You should see `{"status":"ok"}`. If you get a login page or a 404, the port is not Public yet, or the tunnel is not running.
 
 ### 6. Register your server in the xaa.dev tester
 
-Start your server with the URL you will register: `RESOURCE_URL=http://localhost:8080/mcp npm run server`. Then open [xaa.dev/developer/test-resource](https://xaa.dev/developer/test-resource), enter any email to unlock it, click **Register custom resource** and enter these values (values shown are the defaults for this repo):
+Make sure the server is running with `RESOURCE_URL=<public url>/mcp` (Step 5c). Then open [xaa.dev/developer/test-resource](https://xaa.dev/developer/test-resource), enter any email to unlock it, click **Register custom resource** and enter these values (replace `<public url>` with your own; on a purely local run it is `http://localhost:8080`):
 
 | Wizard step | Field | Value |
 |---|---|---|
 | 1. Basic Info | Resource Type | `MCP Server` |
 | 1. Basic Info | Resource Name | `Tube Companion` |
-| 1. Basic Info | Resource Identifier URL | `http://localhost:8080/mcp` |
+| 1. Basic Info | Resource Identifier URL | `<public url>/mcp` (the same value as `RESOURCE_URL`) |
 | 1. Basic Info | Description | `Personal London Tube Companion` (optional) |
 | 2. Auth Server | Choice | `Use Playground Auth Server` (Token Endpoint, Target Client ID and Secret are created on registration) |
-| 3. Scopes & Config | Scope 1 | `tube.read` / `Public Tube info: line status, journey planning, slang` |
-| 3. Scopes & Config | Scope 2 | `oyster.use` / `Personal Oyster card: balance, top-up, book journey, history` |
+| 3. Scopes & Config | Scope 1: scope name | `tube.read` |
+| 3. Scopes & Config | Scope 1: description | `Public Tube info: line status, journey planning, slang` |
+| 3. Scopes & Config | Scope 2: scope name | `oyster.use` |
+| 3. Scopes & Config | Scope 2: description | `Personal Oyster card: balance, top-up, book journey, history` |
 | 3. Scopes & Config | Health Check | `/health` |
 | 3. Scopes & Config | MCP Resource URIs | leave empty (tools only) |
 | 3. Scopes & Config | MCP Tools | optional: `line_status`, `plan_journey`, `cockney_translator`, `oyster_balance`, `top_up_oyster`, `book_journey`, `travel_history` |
@@ -92,7 +119,10 @@ Start your server with the URL you will register: `RESOURCE_URL=http://localhost
 Notes:
 - The Resource Identifier URL becomes the token's `aud`, so it must equal `RESOURCE_URL` exactly, including `/mcp`. Without the variable the server defaults to `http://localhost:8080`, which does not match. xaa.dev may add a trailing slash to the audience; the SDK tolerates that.
 - Scope names must match exactly: `oyster.use`, not `oyster:use`.
-- The health check runs from your browser against `<identifier URL>/health`, which the server serves at `/mcp/health`. An https page often cannot reach `http://localhost` and shows **CORS or network error**. That does not block registration: carry on to Review. Or expose the server with a tunnel and restart it as `RESOURCE_URL=<public url>/mcp npm run server`, using that URL in the table.
+- The health check runs from your browser against `<identifier URL>/health`, which the server serves at `/mcp/health`. An https page often cannot reach `http://localhost` and shows **CORS or network error**. That does not block registration: carry on to Review. Using a public URL (Step 5c) normally avoids this error.
+- Each scope has two boxes: first the **scope name** (`tube.read`), then its **description** (the sentence). Use **Add scope** to get the second pair of boxes.
+
+**Checkpoint:** on the Review page you should see Resource Name `Tube Companion`, your `<public url>/mcp` as the identifier, and exactly two scopes: `tube.read` and `oyster.use`. After **Register Resource**, the tester shows the Login, Token Exchange, JWT Bearer Grant and Call the resource steps used in Step 7.
 
 ### 7. Run the flow against your server
 
