@@ -17,7 +17,7 @@ Lab project. `server/` is a London Tube MCP server that must become an OAuth **R
 ## Rules that matter
 - Public tools (`line_status`, `plan_journey`, `cockney_translator`) need `tube.read`. The four Oyster tools (`oyster_balance`, `top_up_oyster`, `book_journey`, `travel_history`) also need `oyster.use` via `scopeChallenge: requireScopes(SCOPES.OYSTER)`.
 - Oyster cards are per traveller: key a `Map` by `ctx.http.authInfo.extra.sub`, start at £15.00.
-- The token's `aud` must equal `RESOURCE_URL` exactly. For xaa.dev registration that is the MCP URL: run `RESOURCE_URL=http://localhost:8080/mcp npm run server` (the default, without `/mcp`, will not match).
+- The token's `aud` must equal `RESOURCE_URL` exactly. For xaa.dev registration that is the MCP URL: run `RESOURCE_URL=<public url>/mcp npm run server` (the default, without `/mcp`, will not match). `<public url>` is the Codespaces port-8080 address (set to Public) or a tunnel URL; plain `http://localhost:8080/mcp` only works for local checks. See `task.md` Step 5c.
 - Scope names are exact: `oyster.use`, not `oyster:use`.
 - `/health` is deliberately unauthenticated (also served at `/mcp/health`). CORS for `xaa.dev` is already set up.
 - Port 8080 may be held by a stale server from an earlier run (`lsof -nP -iTCP:8080 -sTCP:LISTEN`); it serves old code, so restart it before testing.
